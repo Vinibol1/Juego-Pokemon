@@ -32,8 +32,8 @@ int logica(int entrada, void *datos)
 	else if (entrada == TECLA_ABAJO)
 		jugador->y++;
 
-	jugador->x = min(20, max(0, jugador->x));
-	jugador->y = min(10, max(0, jugador->y));
+	jugador->x = min(32, max(0, jugador->x));
+	jugador->y = min(15, max(0, jugador->y));
 
 	jugador->iteraciones++;
 

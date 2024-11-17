@@ -9,13 +9,14 @@
 - Para compilar:
 
 ```bash
-línea de compilación
+
+gcc - -std=c99 -Wall -Wconversion -Wtype-limits -pedantic -Werror -O2 -g src/*.c tp2.c -o tp2 
 ```
 
 - Para ejecutar:
 
 ```bash
-línea de ejecución
+./tp2 pokedex.csv
 ```
 
 - Para ejecutar con valgrind:

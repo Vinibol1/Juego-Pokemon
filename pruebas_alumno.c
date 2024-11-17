@@ -1,11 +1,14 @@
 #include "pa2m.h"
+#include "src/pokemon.h"
+
 
 void prueba_simple()
 {
-	int i = 14;
-	int j = 14;
-	pa2m_afirmar(i == j, "i es igual a j (%d == %d)", i, j);
-	pa2m_afirmar(2*i == 28, "2*i es igual a 28 (%d)", 2*i);
+	pokemon_t *pokemon = pokemon_crear();
+	pokemon_insertar_atributos(pokemon,"Pikachu",12,"AZUL","RNES");
+	pa2m_afirmar(pokemon != NULL, "pokemon se creo correctamente");
+	pa2m_afirmar(strcmp(pokemon_devolver_nombre(pokemon),"Pikachu") == 0, "el nombre es el correcto");
+	pokemon_destruir(pokemon);
 }
 
 int main()

@@ -3,7 +3,7 @@
 
 typedef struct menu menu_t;
 
-void pokedex();
+void mostrar_pokedex(hash_t *pokedex);
 
 void iniciar_juego();
 

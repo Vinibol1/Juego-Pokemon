@@ -12,8 +12,8 @@
 
 #define ERROR -1
 #define VALOR_MAXIMO 300
-#define MAXIMO_TERRENO_X 15
-#define MAXIMO_TERRENO_Y 32
+#define MAXIMO_TERRENO_X 20
+#define MAXIMO_TERRENO_Y 20
 #define COLUMNAS 4
 
 
@@ -46,6 +46,13 @@ bool posicion_inicial(void *elemento, void *ctx){
 	return true;
 }
 
+bool posicionar_pokemon_en_terreno(void *elemento, void *ctx){
+	pokemon_t *pokemon = elemento;
+	char (*terreno)[MAXIMO_TERRENO_Y][MAXIMO_TERRENO_X] = ctx;
+	(*terreno)[pokemon_devolver_posicion_y(pokemon)][pokemon_devolver_posicion_x(pokemon)] = pokemon_devolver_inicial(pokemon); 
+	return true;
+}
+
 
 void inicializar_terreno(char terreno[MAXIMO_TERRENO_Y][MAXIMO_TERRENO_X]){
 	for(int i = 0;i < MAXIMO_TERRENO_Y; i++) 
@@ -53,9 +60,13 @@ void inicializar_terreno(char terreno[MAXIMO_TERRENO_Y][MAXIMO_TERRENO_X]){
 			terreno[i][j] = '-';
 }
 
-void imprimir_terreno(jugador_t *jugador){
+void imprimir_terreno(void *_datos){
 	char terreno[MAXIMO_TERRENO_Y][MAXIMO_TERRENO_X];
 	inicializar_terreno(terreno);
+	struct datos *datos = _datos;
+	abb_t *pokedex = datos->pokedex;
+	jugador_t *jugador = datos->jugador;
+	abb_iterar_inorden(pokedex,posicionar_pokemon_en_terreno,&terreno);
 	terreno[jugador->y][jugador->x] = 'J';
 	for (int i = 0; i < MAXIMO_TERRENO_Y; i++)
 	{
@@ -121,8 +132,8 @@ int logica(int entrada, void *_datos)
 	else if (entrada == TECLA_ABAJO)
 		jugador->y++;
 
-	jugador->x = min(32, max(0, jugador->x));
-	jugador->y = min(15, max(0, jugador->y));
+	jugador->x = min(MAXIMO_TERRENO_X - 1, max(0, jugador->x));
+	jugador->y = min(MAXIMO_TERRENO_Y - 1, max(0, jugador->y));
 
 	jugador->iteraciones++;
 
@@ -134,10 +145,7 @@ int logica(int entrada, void *_datos)
 	
 	printf("Iteraciones: %d Tiempo: %d\n", jugador->iteraciones,
 	       jugador->iteraciones / 5);
-	pokemon_t *pokemon_aux = pokemon_crear(); 
-	pokemon_insertar_atributos(pokemon_aux,"Pikachu",0,"s","s");
-	pokemon_t *pokemon = abb_obtener(pokedex,pokemon_aux);
-	imprimir_terreno(jugador);
+	imprimir_terreno(datos);
 
 	printf("\n");
 	esconder_cursor();

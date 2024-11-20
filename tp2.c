@@ -1,29 +1,98 @@
 #include "extra/engine.h"
 #include "extra/ansi.h"
-#include "src/diccionario/hash.h"
+#include "src/diccionario/abb.h"
 #include "src/csv.h"
+#include "src/pokemon.h"
+#include "src/menu.h"
+#include "src/jugador.h"
 #include <string.h>
+#include <time.h>
 #include <stdio.h>
+
 
 #define ERROR -1
 #define VALOR_MAXIMO 300
+#define MAXIMO_TERRENO_X 15
+#define MAXIMO_TERRENO_Y 32
 #define COLUMNAS 4
 
-struct pokemon {
-	char *nombre;
-	int puntos;
-	char *color;
-	char *movimiento;
+
+
+
+struct menu
+{
+        void (*mostrar_pokedex)(abb_t *);
+        void (*iniciar_juego)(int (*callback)(int, void *), void *data);
+        void (*iniciar_juego_con_semilla);
+        void (*salir_juego);
 };
 
-
-
-struct jugador {
-	int x;
-	int y;
-	int iteraciones;
-	int puntaje;
+struct datos {
+	jugador_t *jugador;
+	abb_t *pokedex;
 };
+
+int valor_random_terreno_x(){
+	return (rand() % MAXIMO_TERRENO_X);
+}
+
+int valor_random_terreno_y(){
+	return (rand() % MAXIMO_TERRENO_Y);
+}
+
+bool posicion_inicial(void *elemento, void *ctx){
+	pokemon_t *pokemon = elemento;
+	pokemon_insertar_posicion(pokemon,(int)(valor_random_terreno_x()),(int)(valor_random_terreno_y()));
+	return true;
+}
+
+
+void inicializar_terreno(char terreno[MAXIMO_TERRENO_Y][MAXIMO_TERRENO_X]){
+	for(int i = 0;i < MAXIMO_TERRENO_Y; i++) 
+		for (int j = 0; j < MAXIMO_TERRENO_X; j++)
+			terreno[i][j] = '-';
+}
+
+void imprimir_terreno(jugador_t *jugador){
+	char terreno[MAXIMO_TERRENO_Y][MAXIMO_TERRENO_X];
+	inicializar_terreno(terreno);
+	terreno[jugador->y][jugador->x] = 'J';
+	for (int i = 0; i < MAXIMO_TERRENO_Y; i++)
+	{
+		for (int j = 0; j < MAXIMO_TERRENO_X; j++)
+			printf("| %c ", terreno[i][j]);
+
+		printf("|\n");
+	}
+
+}
+
+int comparar_nombre_pokemon(void *_p1, void *_p2)
+{
+	pokemon_t *p1 = _p1;
+	pokemon_t *p2 = _p2;
+	return strcmp((char *)pokemon_devolver_nombre(p1), (char *)pokemon_devolver_nombre(p2));
+}
+
+void destructor(void *_pokemon)
+{
+	pokemon_t * pokemon = _pokemon;
+	pokemon_destruir(pokemon);
+}
+
+
+bool imprimir_pokemon_por_pantalla(void *elemento, void *ctx){
+	pokemon_t *pokemon_actual = elemento; 
+	printf("Nombre:%s, Puntos:%i, Color:%s, Movimiento:%s, Posicion_X:%i \n",
+	       pokemon_devolver_nombre(pokemon_actual), pokemon_devolver_puntos(pokemon_actual),
+	       pokemon_devolver_color(pokemon_actual), pokemon_devolver_movimiento(pokemon_actual), pokemon_devolver_posicion_x(pokemon_actual));
+	return true;
+}
+
+void mostrar_pokedex(abb_t *pokedex){
+	abb_iterar_inorden(pokedex, imprimir_pokemon_por_pantalla, NULL);
+}
+
 
 int max(int a, int b)
 {
@@ -35,11 +104,14 @@ int min(int a, int b)
 	return a < b ? a : b;
 }
 
-int logica(int entrada, void *datos)
+int logica(int entrada, void *_datos)
 {
-	struct jugador *jugador = datos;
-	borrar_pantalla();
+	struct datos *datos = _datos;
+	abb_t *pokedex = datos->pokedex;
+	jugador_t *jugador = datos->jugador;
 
+	borrar_pantalla();
+	system("clear");
 	if (entrada == TECLA_DERECHA)
 		jugador->x++;
 	else if (entrada == TECLA_IZQUIERDA)
@@ -59,17 +131,13 @@ int logica(int entrada, void *datos)
 
 	printf("Presionar " ANSI_COLOR_RED ANSI_COLOR_BOLD "Q" ANSI_COLOR_RESET
 	       " para salir\n");
-
+	
 	printf("Iteraciones: %d Tiempo: %d\n", jugador->iteraciones,
 	       jugador->iteraciones / 5);
-
-	for (int i = 0; i < jugador->y; i++)
-		printf("\n");
-
-	for (int i = 0; i < jugador->x; i++)
-		printf(" ");
-
-	printf(ANSI_COLOR_MAGENTA ANSI_COLOR_BOLD "Ω" ANSI_COLOR_RESET);
+	pokemon_t *pokemon_aux = pokemon_crear(); 
+	pokemon_insertar_atributos(pokemon_aux,"Pikachu",0,"s","s");
+	pokemon_t *pokemon = abb_obtener(pokedex,pokemon_aux);
+	imprimir_terreno(jugador);
 
 	printf("\n");
 	esconder_cursor();
@@ -78,12 +146,7 @@ int logica(int entrada, void *datos)
 }
 
 
-void destruir_pokemon(void *pokemon)
-{
-	struct pokemon *pokemon_actual = pokemon;
-	free(pokemon_actual->nombre);
-	free(pokemon_actual);
-}
+
 
 bool leer_int(const char *str, void *ctx)
 {
@@ -106,19 +169,19 @@ bool leer_caracter(const char *str, void *ctx)
 	return true;
 }
 
-void crear_pokedex(const char* nombre_archivo){
+abb_t *crear_pokedex(const char* nombre_archivo){
 	struct archivo_csv *archivo = abrir_archivo_csv(nombre_archivo, ',');
 	if (!archivo) {
 		cerrar_archivo_csv(archivo);
-		return ERROR;
+		return NULL;
 	}
 
-	struct pokemon *pokemon;
+	pokemon_t *pokemon = NULL;
 
-	hash_t *pokedex = hash_crear(10);
+	abb_t *pokedex = abb_crear(comparar_nombre_pokemon);
 	if (!pokedex) {
 		cerrar_archivo_csv(archivo);
-		return ERROR;
+		return NULL;
 	}
 	bool (*funciones[COLUMNAS])(const char *, void *) = {
 		crear_string_nuevo, leer_int, crear_string_nuevo, crear_string_nuevo  
@@ -131,34 +194,79 @@ void crear_pokedex(const char* nombre_archivo){
 				     };
 	while (leer_linea_csv(archivo, COLUMNAS, funciones, punteros) ==
 	       COLUMNAS) {
-		pokemon = malloc(sizeof(struct pokemon));
+		pokemon = pokemon_crear();
 		if (!pokemon) {
-			hash_destruir(pokedex);
+			abb_destruir(pokedex);
 			cerrar_archivo_csv(archivo);
-			return ERROR;
+			return NULL;
 		}
-		pokemon->nombre = nombre;
-		pokemon->tipo = tipo;
-		pokemon->fuerza = fuerza;
-		pokemon->destreza = destreza;
-		pokemon->resistencia = resistencia;
-		if (!hash_insertar(pokedex, pokemon->nombre, pokemon, NULL)) {
-			hash_destruir(pokedex);
+		pokemon_insertar_atributos(pokemon,nombre,puntos,color,movimiento);
+		if (!abb_insertar(pokedex, pokemon)) {
+			abb_destruir(pokedex);
+			pokemon_destruir(pokemon);
 			cerrar_archivo_csv(archivo);
-			return ERROR;
+			return NULL;
 		}
+		free(nombre);
+		free(movimiento);
+		free(color);
 	}
 	cerrar_archivo_csv(archivo);
-	hash_destruir_todo(pokedex, destruir_pokemon);
+	return pokedex;
 }
 
-int main()
-{
-	struct jugador jugador = { 0 };
 
-	game_loop(logica, &jugador);
+int main(int argc, char *argv[])
+{
+	srand((unsigned)time(NULL));
+	jugador_t *jugador = jugador_crear();
+	struct datos datos;
+	datos.jugador = jugador;
+	abb_t *pokedex = crear_pokedex(argv[1]);
+	menu_t menu;
+	datos.pokedex = pokedex;
+	menu.mostrar_pokedex = mostrar_pokedex; 
+	menu.iniciar_juego = game_loop;
+
+
+	bool es_correcto = false;
+	while (!es_correcto) {
+		char opcion;
+		int semilla;
+		printf("Escribe el numero de la opción que quieras\nP: Muestra el pokedex cargado. Se deben mostrar los pokemon por orden alfabético\n- J: Jugar. Inicia el juego.\n- S: Jugar con semilla. Inicia el juego pero pidiendo un número para utilizar como semilla.\n- Q: Salir. Sale del juego.");
+		if (!scanf("%c", &opcion)) {
+			printf("No se pudo leer el numero correctamente");
+			return ERROR;
+		}
+		switch (opcion) {
+			case 'P':
+				menu.mostrar_pokedex(pokedex);
+				es_correcto = true;
+				break;
+			case 'J':
+				abb_iterar_inorden(pokedex,posicion_inicial,NULL);
+				menu.iniciar_juego(logica,&datos);
+				es_correcto = true;
+				break;
+			case 'S':
+				printf("ingresa el numero de la semilla: ");
+				if (!scanf("%i", &semilla)) {
+					printf("No se pudo leer el numero correctamente");
+					break;
+				}
+				srand((unsigned int)semilla);
+				abb_iterar_inorden(pokedex,posicion_inicial,NULL);
+				menu.iniciar_juego(logica,&datos);
+				es_correcto = true;
+				break;
+			default:
+				printf("Numero no valido ingresado, por favor ingrese 1 o 2\n");
+				break;
+		}
+	}
 
 	mostrar_cursor();
+	abb_destruir_todo(pokedex,destructor);
 
 	return 0;
 }

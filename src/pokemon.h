@@ -6,9 +6,17 @@
 
 typedef struct pokemon pokemon_t;
 
-struct pokemon* pokemon_crear();
+pokemon_t *pokemon_crear();
 
 bool pokemon_insertar_atributos(pokemon_t *pokemon,char *nombre,int puntaje, char* color, char* movimientos);
+
+void pokemon_insertar_posicion(pokemon_t *pokemon,int x,int y);
+
+int pokemon_devolver_posicion_y(pokemon_t *pokemon);
+
+int pokemon_devolver_posicion_x(pokemon_t *pokemon);
+
+char pokemon_devolver_inicial(pokemon_t *pokemon);
 
 char* pokemon_devolver_nombre(pokemon_t *pokemon);
 

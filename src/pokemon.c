@@ -7,6 +7,8 @@ struct  pokemon
 	int puntos;
 	char *color;
 	char *movimiento;
+        int x;
+        int y;
 };
 
 struct pokemon* pokemon_crear(){
@@ -14,6 +16,9 @@ struct pokemon* pokemon_crear(){
 }
 
 static char *copiar_string(char*string){
+        if (string == NULL)
+        return NULL;
+        
         char *copia_string = malloc((strlen(string) + 1) * sizeof(char));
 	if (!copia_string)
 		return NULL;
@@ -43,8 +48,29 @@ bool pokemon_insertar_atributos(pokemon_t *pokemon, char *nombre,int puntaje, ch
                 free(copia_color);
                 return false;
         }
+        pokemon->movimiento = copia_movimientos;
+
         return true;
 }
+
+void pokemon_insertar_posicion(pokemon_t *pokemon,int x,int y){
+        pokemon->x = x;
+        pokemon->y = y;
+}
+
+
+char pokemon_devolver_inicial(pokemon_t *pokemon){
+        return pokemon->nombre[0];
+}
+
+int pokemon_devolver_posicion_x(pokemon_t *pokemon){
+        return pokemon->x;
+}
+
+int pokemon_devolver_posicion_y(pokemon_t *pokemon){
+        return pokemon->y;
+}
+
 
 char* pokemon_devolver_nombre(pokemon_t *pokemon){
         return pokemon->nombre;

@@ -23,9 +23,16 @@ struct menu
 {
         void (*mostrar_pokedex)(abb_t *);
         void (*iniciar_juego)(int (*callback)(int, void *), void *data);
-        void (*iniciar_juego_con_semilla);
         void (*salir_juego);
 };
+
+void atrapar_pokemon(void * pokemon, void *jugador) {
+	if (pokemon_devolver_posicion_x(pokemon) == jugador_devolver_posicion_x(jugador) && pokemon_devolver_posicion_y(pokemon) == jugador_devolver_posicion_y(jugador))
+	{
+		/* code */
+	}
+	
+}
 
 struct datos {
 	jugador_t *jugador;
@@ -45,6 +52,8 @@ bool posicion_inicial(void *elemento, void *ctx){
 	pokemon_insertar_posicion(pokemon,(int)(valor_random_terreno_x()),(int)(valor_random_terreno_y()));
 	return true;
 }
+
+
 
 bool posicionar_pokemon_en_terreno(void *elemento, void *ctx){
 	pokemon_t *pokemon = elemento;
@@ -66,12 +75,14 @@ void imprimir_terreno(void *_datos){
 	struct datos *datos = _datos;
 	abb_t *pokedex = datos->pokedex;
 	jugador_t *jugador = datos->jugador;
+	
 	abb_iterar_inorden(pokedex,posicionar_pokemon_en_terreno,&terreno);
-	terreno[jugador->y][jugador->x] = 'J';
+	
+	terreno[jugador_devolver_posicion_y(jugador)][jugador_devolver_posicion_x(jugador)] = 'J';
 	for (int i = 0; i < MAXIMO_TERRENO_Y; i++)
 	{
 		for (int j = 0; j < MAXIMO_TERRENO_X; j++)
-			printf("| %c ", terreno[i][j]);
+			printf("| " " %c " , terreno[i][j]);
 
 		printf("|\n");
 	}
@@ -94,15 +105,16 @@ void destructor(void *_pokemon)
 
 bool imprimir_pokemon_por_pantalla(void *elemento, void *ctx){
 	pokemon_t *pokemon_actual = elemento; 
-	printf("Nombre:%s, Puntos:%i, Color:%s, Movimiento:%s, Posicion_X:%i \n",
+	printf("Nombre:%s, Puntos:%i, Color:%s, Movimiento:%s \n",
 	       pokemon_devolver_nombre(pokemon_actual), pokemon_devolver_puntos(pokemon_actual),
-	       pokemon_devolver_color(pokemon_actual), pokemon_devolver_movimiento(pokemon_actual), pokemon_devolver_posicion_x(pokemon_actual));
+	       pokemon_devolver_color(pokemon_actual), pokemon_devolver_movimiento(pokemon_actual));
 	return true;
 }
 
 void mostrar_pokedex(abb_t *pokedex){
 	abb_iterar_inorden(pokedex, imprimir_pokemon_por_pantalla, NULL);
 }
+
 
 
 int max(int a, int b)
@@ -115,6 +127,67 @@ int min(int a, int b)
 	return a < b ? a : b;
 }
 
+bool movimientos_pokemones(void *_pokemon,void *_entrada_jugador){
+	pokemon_t *pokemon = _pokemon;
+	int *entrada_jugador = _entrada_jugador;
+	char *movimiento = pokemon_devolver_movimiento(pokemon);
+	int numero_random = rand() % 4;
+	while (*movimiento != 0)
+	{
+		switch (*movimiento)
+		{
+			case 'N':
+				pokemon_restar_en_1_posicion_y(pokemon);
+				break;
+			case 'S':
+				pokemon_aumentar_en_1_posicion_y(pokemon);
+				break;
+			case 'E':
+				pokemon_aumentar_en_1_posicion_x(pokemon);
+				break;
+			case 'O':
+				pokemon_restar_en_1_posicion_x(pokemon);
+				break;
+			case 'J':
+				if (*entrada_jugador == TECLA_DERECHA)
+					pokemon_aumentar_en_1_posicion_x(pokemon);
+				else if (*entrada_jugador == TECLA_IZQUIERDA)
+					pokemon_restar_en_1_posicion_x(pokemon);
+				else if (*entrada_jugador == TECLA_ARRIBA)
+					pokemon_restar_en_1_posicion_y(pokemon);
+				else if (*entrada_jugador == TECLA_ABAJO)
+					pokemon_aumentar_en_1_posicion_y(pokemon);
+				break;
+			case 'I':
+				if (*entrada_jugador == TECLA_DERECHA)
+					pokemon_restar_en_1_posicion_x(pokemon);
+				else if (*entrada_jugador == TECLA_IZQUIERDA)
+					pokemon_aumentar_en_1_posicion_x(pokemon);
+				else if (*entrada_jugador == TECLA_ARRIBA)
+					pokemon_aumentar_en_1_posicion_y(pokemon);
+				else if (*entrada_jugador == TECLA_ABAJO)
+					pokemon_restar_en_1_posicion_y(pokemon);
+				break;
+			case 'R':
+				if (numero_random == 0)
+					pokemon_restar_en_1_posicion_x(pokemon);
+				else if (numero_random == 1)
+					pokemon_aumentar_en_1_posicion_x(pokemon);
+				else if (numero_random == 2)
+					pokemon_aumentar_en_1_posicion_y(pokemon);
+				else if (numero_random == 3)
+					pokemon_restar_en_1_posicion_y(pokemon);
+			default:
+				break;
+		}
+		movimiento++;
+		
+	}
+	pokemon_insertar_posicion(pokemon,min(MAXIMO_TERRENO_X - 1, max(0, pokemon_devolver_posicion_x(pokemon))),min(MAXIMO_TERRENO_Y - 1, max(0, pokemon_devolver_posicion_y(pokemon))));
+	return true;
+}
+
+
 int logica(int entrada, void *_datos)
 {
 	struct datos *datos = _datos;
@@ -123,19 +196,27 @@ int logica(int entrada, void *_datos)
 
 	borrar_pantalla();
 	system("clear");
-	if (entrada == TECLA_DERECHA)
-		jugador->x++;
-	else if (entrada == TECLA_IZQUIERDA)
-		jugador->x--;
-	else if (entrada == TECLA_ARRIBA)
-		jugador->y--;
-	else if (entrada == TECLA_ABAJO)
-		jugador->y++;
+	if (entrada == TECLA_DERECHA){
+		jugador_aumentar_en_1__posicion_x(jugador);
+		abb_iterar_inorden(pokedex,movimientos_pokemones,&entrada);
+	}
+	else if (entrada == TECLA_IZQUIERDA){
+		jugador_restar_en_1_posicion_x(jugador);
+		abb_iterar_inorden(pokedex,movimientos_pokemones,&entrada);
+	}
+	else if (entrada == TECLA_ARRIBA){
+		jugador_restar_en_1_posicion_y(jugador);
+		abb_iterar_inorden(pokedex,movimientos_pokemones,&entrada);
+	}
+	else if (entrada == TECLA_ABAJO){
+		jugador_aumentar_en_1_posicion_y(jugador);
+		abb_iterar_inorden(pokedex,movimientos_pokemones,&entrada);
+	}
 
-	jugador->x = min(MAXIMO_TERRENO_X - 1, max(0, jugador->x));
-	jugador->y = min(MAXIMO_TERRENO_Y - 1, max(0, jugador->y));
+	jugador_insertar_posicion_x(jugador,min(MAXIMO_TERRENO_X - 1, max(0, jugador_devolver_posicion_x(jugador))));
+	jugador_insertar_posicion_y(jugador,min(MAXIMO_TERRENO_Y - 1, max(0, jugador_devolver_posicion_y(jugador))));
 
-	jugador->iteraciones++;
+	jugador_insertar_iteraciones(jugador,jugador_devolver_iteraciones(jugador) + 1);
 
 	printf("Utilizar " ANSI_COLOR_CYAN ANSI_COLOR_BOLD
 	       "⬆⬇⬅➡" ANSI_COLOR_RESET " para moverse\n");
@@ -143,18 +224,15 @@ int logica(int entrada, void *_datos)
 	printf("Presionar " ANSI_COLOR_RED ANSI_COLOR_BOLD "Q" ANSI_COLOR_RESET
 	       " para salir\n");
 	
-	printf("Iteraciones: %d Tiempo: %d\n", jugador->iteraciones,
-	       jugador->iteraciones / 5);
+	printf("Iteraciones: %d Tiempo: %d\n", jugador_devolver_iteraciones(jugador),
+	       jugador_devolver_iteraciones(jugador) / 5);
 	imprimir_terreno(datos);
 
 	printf("\n");
 	esconder_cursor();
 
 	return entrada == 'q' || entrada == 'Q';
-}
-
-
-
+};
 
 bool leer_int(const char *str, void *ctx)
 {
@@ -224,6 +302,39 @@ abb_t *crear_pokedex(const char* nombre_archivo){
 }
 
 
+struct aux {
+	abb_t *pokedex_7_pokemones;
+	int rand;
+	int contador;
+};
+
+bool pokemones_randoms_de_pokedex(void *_pokemon,void *ctx){
+	pokemon_t *pokemon = _pokemon;
+	struct aux *contenedor = ctx;
+	if (contenedor->contador != contenedor->rand)
+	{
+		contenedor->contador++;
+		return true;
+	}
+	pokemon_t *nuevo_pokemon = pokemon_crear();
+	pokemon_insertar_atributos(nuevo_pokemon,pokemon_devolver_nombre(pokemon),pokemon_devolver_puntos(pokemon),pokemon_devolver_color(pokemon),pokemon_devolver_movimiento(pokemon));
+	abb_insertar(contenedor->pokedex_7_pokemones,nuevo_pokemon);
+	return false;
+}
+
+abb_t *crear_pokemones_elegidos(abb_t *pokedex){
+	abb_t *pokedex_con_7_pokemones = abb_crear(comparar_nombre_pokemon);
+	struct aux contenedor;
+	contenedor.pokedex_7_pokemones = pokedex_con_7_pokemones;
+	for (size_t i = 0; i < 7; i++)
+	{
+		contenedor.contador = 0;
+		contenedor.rand = rand() % abb_cantidad(pokedex);
+		abb_iterar_inorden(pokedex,pokemones_randoms_de_pokedex,&contenedor);
+	}
+	return pokedex_con_7_pokemones;
+}
+
 int main(int argc, char *argv[])
 {
 	srand((unsigned)time(NULL));
@@ -232,11 +343,9 @@ int main(int argc, char *argv[])
 	datos.jugador = jugador;
 	abb_t *pokedex = crear_pokedex(argv[1]);
 	menu_t menu;
-	datos.pokedex = pokedex;
+	abb_t *pokedex_con_7_pokemones = NULL;
 	menu.mostrar_pokedex = mostrar_pokedex; 
 	menu.iniciar_juego = game_loop;
-
-
 	bool es_correcto = false;
 	while (!es_correcto) {
 		char opcion;
@@ -252,7 +361,9 @@ int main(int argc, char *argv[])
 				es_correcto = true;
 				break;
 			case 'J':
-				abb_iterar_inorden(pokedex,posicion_inicial,NULL);
+				pokedex_con_7_pokemones = crear_pokemones_elegidos(pokedex);
+				datos.pokedex = pokedex_con_7_pokemones;
+				abb_iterar_inorden(pokedex_con_7_pokemones,posicion_inicial,NULL);
 				menu.iniciar_juego(logica,&datos);
 				es_correcto = true;
 				break;
@@ -263,10 +374,17 @@ int main(int argc, char *argv[])
 					break;
 				}
 				srand((unsigned int)semilla);
-				abb_iterar_inorden(pokedex,posicion_inicial,NULL);
+				pokedex_con_7_pokemones = crear_pokemones_elegidos(pokedex);
+				datos.pokedex = pokedex_con_7_pokemones;
+				abb_iterar_inorden(pokedex_con_7_pokemones,posicion_inicial,NULL);
 				menu.iniciar_juego(logica,&datos);
 				es_correcto = true;
 				break;
+			case 'Q':
+				mostrar_cursor();
+				abb_destruir_todo(pokedex,destructor);
+
+				return 0;
 			default:
 				printf("Numero no valido ingresado, por favor ingrese 1 o 2\n");
 				break;
@@ -274,7 +392,9 @@ int main(int argc, char *argv[])
 	}
 
 	mostrar_cursor();
+	jugador_destruir(jugador);
 	abb_destruir_todo(pokedex,destructor);
+	abb_destruir_todo(pokedex_con_7_pokemones,destructor);
 
 	return 0;
 }

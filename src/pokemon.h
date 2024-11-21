@@ -26,6 +26,14 @@ char* pokemon_devolver_color(pokemon_t *pokemon);
 
 int pokemon_devolver_puntos(pokemon_t *pokemon);
 
+void pokemon_aumentar_en_1_posicion_y(pokemon_t *pokemon);
+
+void pokemon_aumentar_en_1_posicion_x(pokemon_t *pokemon);
+
+void pokemon_restar_en_1_posicion_y(pokemon_t *pokemon);
+
+void pokemon_restar_en_1_posicion_x(pokemon_t *pokemon);
+
 void pokemon_destruir(pokemon_t *pokemon);
 
 #endif // __POKEMON_H__

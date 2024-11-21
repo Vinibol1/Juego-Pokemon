@@ -88,6 +88,30 @@ int pokemon_devolver_puntos(pokemon_t *pokemon){
         return pokemon->puntos;
 }
 
+void pokemon_aumentar_en_1_posicion_y(pokemon_t *pokemon){
+        if (!pokemon)
+                return;
+        pokemon->y++;
+        
+}
+
+void pokemon_aumentar_en_1_posicion_x(pokemon_t *pokemon){
+        if (!pokemon)
+                return;
+        pokemon->x++;
+}
+
+void pokemon_restar_en_1_posicion_y(pokemon_t *pokemon){
+        if (!pokemon)
+                return;
+        pokemon->y--;
+}
+
+void pokemon_restar_en_1_posicion_x(pokemon_t *pokemon){
+        if (!pokemon)
+                return;
+        pokemon->x--;
+}
 
 void pokemon_destruir(pokemon_t *pokemon){
         free(pokemon->nombre);

@@ -49,6 +49,7 @@ Se pide implementar un juego aplicando todo lo aprendido durante la materia. Par
      - El puntaje alcanzado por el jugador
      - El multiplicador máximo alcanzado
      - El combo mas largo realizado (sucesión de pokemones que incrementan el multiplicador)
+     
 
 ## Menú principal
 

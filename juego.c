@@ -1,13 +1,10 @@
-#include "extra/engine.h"
-#include "extra/ansi.h"
-#include "src/abb.h"
-#include "src/csv.h"
-#include "src/jugador.h"
-#include "src/pokemon.h"
-#include <string.h>
-#include <time.h>
-#include <stdio.h>
 
+#include "abb.h"
+#include "jugador.h"
+#include "pokemon.h"
+#include "../extra/engine.h"
+#include "../extra/ansi.h"
+#include <stdio.h>
 
 
 #define ERROR -1
@@ -33,16 +30,6 @@ struct datos {
 	abb_t *pokedex;
 	abb_t *pokedex_en_tablero;
 };
-
-int max(int a, int b)
-{
-	return a > b ? a : b;
-}
-
-int min(int a, int b)
-{
-	return a < b ? a : b;
-}
 
 int valor_random_terreno_x(){
 	return (rand() % MAXIMO_TERRENO_X);
@@ -83,14 +70,15 @@ bool atrapar_pokemon(void * _pokemon, void *_datos){
 		jugador_insertar_puntaje(jugador,pokemon_devolver_puntos(pokemon)*jugador_devolver_multiplicador(jugador) + jugador_devolver_puntaje(jugador));
 		
 		if (jugador_devolver_ultimo_color(jugador) != NULL && jugador_devolver_ultimo_color(jugador) != NULL && (jugador_devolver_ultima_inicial(jugador) == pokemon_devolver_inicial(pokemon) || strcmp(jugador_devolver_ultimo_color(jugador) ,pokemon_devolver_color(pokemon)) == 0))
+		{
 			jugador_insertar_multiplicador(jugador,jugador_devolver_multiplicador(jugador) + 1);
 			
+		}
 		else{
 			jugador_insertar_ultimo_color(jugador,pokemon_devolver_color(pokemon));
 			jugador_insertar_ultima_inicial(jugador,pokemon_devolver_inicial(pokemon));
 			jugador_insertar_multiplicador(jugador,1);
 		}
-
 		jugador_insertar_pokemon_combo(jugador,pokemon_devolver_nombre(pokemon));
 		
 		
@@ -102,7 +90,7 @@ bool atrapar_pokemon(void * _pokemon, void *_datos){
 		pokemon_insertar_atributos(pokemon,pokemon_devolver_nombre(contenedor.nuevo_pokemon),pokemon_devolver_puntos(contenedor.nuevo_pokemon),pokemon_devolver_color(contenedor.nuevo_pokemon),pokemon_devolver_movimiento(contenedor.nuevo_pokemon));
 		pokemon_destruir(contenedor.nuevo_pokemon);
 		posicion_inicial(pokemon,NULL);
-
+		return true;
 	}
 	return true;
 	
@@ -177,7 +165,15 @@ void finalizar_juego(struct datos *datos){
 
 }
 
+int max(int a, int b)
+{
+	return a > b ? a : b;
+}
 
+int min(int a, int b)
+{
+	return a < b ? a : b;
+}
 
 bool movimientos_pokemones(void *_pokemon,void *_entrada_jugador){
 	pokemon_t *pokemon = _pokemon;
@@ -319,12 +315,12 @@ int logica(int entrada, void *_datos)
 
 	printf("\n");
 	esconder_cursor();
-	if (entrada == 'q' || entrada == 'Q' || (jugador_devolver_iteraciones(jugador) / 5) == 60)
+	if ((jugador_devolver_iteraciones(jugador) / 5) == 60)
 	{
 		finalizar_juego(datos);
 		return 'q';
 	}
-	return 0;
+	return entrada == 'q' || entrada == 'Q';
 }
 
 
@@ -335,153 +331,4 @@ void iniciar_juego(struct datos* datos){
 	abb_iterar_inorden(pokedex_en_tablero,posicion_inicial,NULL);
 	game_loop(logica,datos);
 	abb_destruir_todo(pokedex_en_tablero,destructor);
-}
-
-
-bool imprimir_pokemon_por_pantalla(void *elemento, void *ctx){
-	pokemon_t *pokemon_actual = elemento; 
-	printf("Nombre:%s, Puntos:%i, Color:%s, Movimiento:%s \n",
-	       pokemon_devolver_nombre(pokemon_actual), pokemon_devolver_puntos(pokemon_actual),
-	       pokemon_devolver_color(pokemon_actual), pokemon_devolver_movimiento(pokemon_actual));
-	return true;
-}
-
-void mostrar_pokedex(abb_t *pokedex){
-	abb_iterar_inorden(pokedex, imprimir_pokemon_por_pantalla, NULL);
-}
-
-
-bool leer_int(const char *str, void *ctx)
-{
-	return sscanf(str, "%d", (int *)ctx) == 1;
-}
-
-bool crear_string_nuevo(const char *str, void *ctx)
-{
-	char *nuevo = malloc(strlen(str) + 1);
-	if (nuevo == NULL)
-		return false;
-	strcpy(nuevo, str);
-	*(char **)ctx = nuevo;
-	return true;
-}
-
-bool leer_caracter(const char *str, void *ctx)
-{
-	*(char *)ctx = *(char *)str;
-	return true;
-}
-
-abb_t *crear_pokedex(const char* nombre_archivo){
-	struct archivo_csv *archivo = abrir_archivo_csv(nombre_archivo, ',');
-	if (!archivo) {
-		cerrar_archivo_csv(archivo);
-		return NULL;
-	}
-
-	pokemon_t *pokemon = NULL;
-
-	abb_t *pokedex = abb_crear(comparar_nombre_pokemon);
-	if (!pokedex) {
-		cerrar_archivo_csv(archivo);
-		return NULL;
-	}
-	bool (*funciones[COLUMNAS])(const char *, void *) = {
-		crear_string_nuevo, leer_int, crear_string_nuevo, crear_string_nuevo  
-	};
-	char *nombre = NULL;
-	int puntos;
-	char *color = NULL;
-	char *movimiento = NULL;
-	void *punteros[COLUMNAS] = { &nombre, &puntos, &color, &movimiento
-				     };
-	while (leer_linea_csv(archivo, COLUMNAS, funciones, punteros) ==
-	       COLUMNAS) {
-		pokemon = pokemon_crear();
-		if (!pokemon) {
-			abb_destruir(pokedex);
-			cerrar_archivo_csv(archivo);
-			return NULL;
-		}
-		pokemon_insertar_atributos(pokemon,nombre,puntos,color,movimiento);
-		if (!abb_insertar(pokedex, pokemon)) {
-			abb_destruir(pokedex);
-			pokemon_destruir(pokemon);
-			cerrar_archivo_csv(archivo);
-			return NULL;
-		}
-		free(nombre);
-		free(movimiento);
-		free(color);
-	}
-	cerrar_archivo_csv(archivo);
-	return pokedex;
-}
-
-char transformar_caracter_en_mayuscula(char caracter){
-	switch (caracter)
-		{
-		case 'p':
-			return 'P';
-		case 'q':
-			return 'Q';
-		case 's':
-			return 'S';
-		case 'j':
-			return 'J';
-		}
-	return caracter;
-}
-
-void menu(struct datos* datos){
-	bool es_correcto = false;
-	while (!es_correcto) {
-		int semilla;
-		printf("Escribe el numero de la opción que quieras\n- P: Muestra el pokedex cargado. \n- J: Jugar. \n- S: Jugar con semilla. \n- Q: Salir. ");
-		char caracter = (char)getchar();
-		caracter = transformar_caracter_en_mayuscula(caracter);
-		switch (caracter) {
-			case 'P':
-				mostrar_pokedex(datos->pokedex);
-				es_correcto = true;
-				break;
-			case 'J':
-				srand((unsigned)time(NULL));
-				iniciar_juego(datos);
-				es_correcto = true;
-				break;
-			case 'S':
-				printf("ingresa el numero de la semilla: ");
-				if (!scanf("%i", &semilla)) {
-					printf("No se pudo leer el numero correctamente");
-					break;
-				}
-				srand((unsigned int)semilla);
-				iniciar_juego(datos);
-				es_correcto = true;
-				break;
-			case 'Q':
-				es_correcto = true;
-			default:
-				printf("Letra no valida ingresada, por favor ingrese P, J, S o Q\n");
-				break;
-		}
-	}
-}
-
-int main(int argc, char *argv[])
-{
-	jugador_t *jugador = jugador_crear();
-	struct datos datos;
-	datos.jugador = jugador;
-	abb_t *pokedex = crear_pokedex(argv[1]);
-	datos.pokedex = pokedex;
-	
-	menu(&datos);
-
-	mostrar_cursor();
-	jugador_destruir(jugador);
-	abb_destruir_todo(pokedex,destructor);
-
-	return 0;
 }

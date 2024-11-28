@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include "../extra/ansi.h"
 
 typedef struct pokemon pokemon_t;
 
@@ -33,6 +34,10 @@ void pokemon_aumentar_en_1_posicion_x(pokemon_t *pokemon);
 void pokemon_restar_en_1_posicion_y(pokemon_t *pokemon);
 
 void pokemon_restar_en_1_posicion_x(pokemon_t *pokemon);
+
+char * pokemon_devolver_ansi(pokemon_t *pokemon);
+
+void pokemon_destruir_atributos(pokemon_t *pokemon);
 
 void pokemon_destruir(pokemon_t *pokemon);
 

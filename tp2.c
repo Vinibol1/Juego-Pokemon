@@ -79,18 +79,17 @@ bool atrapar_pokemon(void * _pokemon, void *_datos){
 	jugador_t *jugador = datos->jugador;
 	if (pokemon_devolver_posicion_x(pokemon) == jugador_devolver_posicion_x(jugador) && pokemon_devolver_posicion_y(pokemon) == jugador_devolver_posicion_y(jugador))
 	{
-		printf("atrapaste a : %s", pokemon_devolver_nombre(pokemon));
-		jugador_insertar_puntaje(jugador,pokemon_devolver_puntos(pokemon)*jugador_devolver_multiplicador(jugador) + jugador_devolver_puntaje(jugador));
+		jugador_insertar_puntaje(jugador,pokemon_devolver_puntos(pokemon)*jugador_devolver_multiplicador(jugador));
 		
 		if (jugador_devolver_ultimo_color(jugador) != NULL && jugador_devolver_ultimo_color(jugador) != NULL && (jugador_devolver_ultima_inicial(jugador) == pokemon_devolver_inicial(pokemon) || strcmp(jugador_devolver_ultimo_color(jugador) ,pokemon_devolver_color(pokemon)) == 0))
 			jugador_insertar_multiplicador(jugador,jugador_devolver_multiplicador(jugador) + 1);
 			
 		else{
-			jugador_insertar_ultimo_color(jugador,pokemon_devolver_color(pokemon));
-			jugador_insertar_ultima_inicial(jugador,pokemon_devolver_inicial(pokemon));
 			jugador_insertar_multiplicador(jugador,1);
 		}
-
+		jugador_insertar_ultimo_color(jugador,pokemon_devolver_color(pokemon));
+		jugador_insertar_ultima_inicial(jugador,pokemon_devolver_inicial(pokemon));
+		jugador_insertar_ultimo_pokemon(jugador,pokemon_devolver_nombre(pokemon));
 		jugador_insertar_pokemon_combo(jugador,pokemon_devolver_nombre(pokemon));
 		
 		
@@ -283,7 +282,7 @@ int logica(int entrada, void *_datos)
 	borrar_pantalla();
 	
 	if (entrada == TECLA_DERECHA){
-		jugador_aumentar_en_1__posicion_x(jugador);
+		jugador_aumentar_en_1_posicion_x(jugador);
 		abb_iterar_inorden(pokedex,movimientos_pokemones,&entrada);
 	}
 	else if (entrada == TECLA_IZQUIERDA){
@@ -312,8 +311,8 @@ int logica(int entrada, void *_datos)
 	printf("Presionar " ANSI_COLOR_RED ANSI_COLOR_BOLD "Q" ANSI_COLOR_RESET
 	       " para salir\n");
 	
-	printf("Iteraciones: %d Tiempo: %d Multiplicador: %i puntaje: %i\n", jugador_devolver_iteraciones(jugador),
-	       jugador_devolver_iteraciones(jugador) / 5, jugador_devolver_multiplicador(jugador), jugador_devolver_puntaje(jugador));
+	printf("Iteraciones: %d Tiempo: %d Multiplicador: %i \npuntaje: %i   ultimo pokemon capturado: %s   color ultimo pokemon: %s\n", jugador_devolver_iteraciones(jugador),
+	       jugador_devolver_iteraciones(jugador) / 5, jugador_devolver_multiplicador(jugador), jugador_devolver_puntaje(jugador), jugador_devolver_ultimo_pokemon(jugador), jugador_devolver_ultimo_color(jugador));
 
 	imprimir_terreno(datos);
 

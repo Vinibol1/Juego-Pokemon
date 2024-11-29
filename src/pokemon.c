@@ -28,7 +28,7 @@ static char *copiar_string(char*string){
 }
 
 bool pokemon_insertar_atributos(pokemon_t *pokemon, char *nombre,int puntaje, char* color, char* movimientos){
-        if (!pokemon || !nombre)
+        if (!pokemon)
                 return false;
         
         
